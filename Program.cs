@@ -1,58 +1,78 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace BarraDeEstadoConBarraCarga
+class Punto5
 {
-    class ejercicio4
+    private static readonly object syncLock = new object();
+    private static int[] progress = new int[4];
+    private static bool[] isProcessFinished = new bool[4];
 
+    static void Main()
     {
-        static bool procesoCancelado = false;
+        // Iniciar un hilo para actualizar el tablero de comando
+        Task.Run(() => UpdateCommandBoard());
 
-        static async Task Main(string[] args)
+        // Iniciar un hilo para cada proceso
+        for (int i = 0; i < 4; i++)
         {
-            Console.WriteLine("Iniciando proceso...");
-
-            Task procesoTarea = EjecutarProcesoAsync();
-            Task barraCargaTarea = ActualizarBarraCargaAsync(procesoTarea);
-
-            await Task.WhenAll(procesoTarea, barraCargaTarea);
-
-            Console.WriteLine("Proceso completado.");
+            int processNumber = i;
+            Task.Run(() => RunProcess(processNumber));
         }
 
-        static async Task EjecutarProcesoAsync()
-        {
-            // Simula un proceso que toma tiempo
-            for (int i = 0; i < 10; i++)
-            {
-                await Task.Delay(1000);
+        Console.ReadLine();
+    }
 
-                if (procesoCancelado)
+    static void UpdateCommandBoard()
+    {
+        while (!AreAllProcessesFinished()) // Esperar hasta que todos los procesos hayan terminado
+        {
+            Console.Clear(); // Limpiar la consola para actualizar el tablero
+
+            for (int i = 0; i < 4; i++)
+            {
+                lock (syncLock)
                 {
-                    Console.WriteLine("Proceso cancelado.");
-                    return;
+                    Console.WriteLine($"Proceso {i + 1} - Progreso: [{new string('#', progress[i] / 2)}{new string('-', (100 - progress[i]) / 2)}] {progress[i]}%");
                 }
             }
+
+            Thread.Sleep(100); // Actualizar cada 100 ms
         }
 
-        static async Task ActualizarBarraCargaAsync(Task procesoTarea)
-        {
-            int barLength = 20; 
-            int porcentaje = 0;
+        Console.WriteLine("Todos los procesos han terminado.");
+    }
 
-            Console.WriteLine("Progreso:");
-            while (!procesoTarea.IsCompleted)
+    static void RunProcess(int processNumber)
+    {
+        for (int i = 5; i <= 100 && !isProcessFinished[processNumber]; i += 5) // Incrementar de a 5 en 5
+        {
+            lock (syncLock)
             {
-                Console.Write($"|{new string('#', porcentaje / (100 / barLength)).PadRight(barLength)}| {porcentaje}%\r");
-                porcentaje += 10;
-                await Task.Delay(1000);
+                progress[processNumber] = i;
             }
-            Console.WriteLine();
-        }
 
-        static void CancelarProceso()
+            Thread.Sleep(200); // Simular el tiempo del proceso
+
+            if (i == 100)
+            {
+                isProcessFinished[processNumber] = true;
+            }
+        }
+    }
+
+    static bool AreAllProcessesFinished()
+    {
+        lock (syncLock)
         {
-            procesoCancelado = true;
+            for (int i = 0; i < 4; i++)
+            {
+                if (!isProcessFinished[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
