@@ -1,0 +1,100 @@
+﻿@page "/progreso"
+
+<div class="container">
+
+    <div class="row">
+        @foreach (var taskProgress in taskProgressList.Take(3))
+        {
+            <div class="col-md-4">
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar bg-pink" style="width: @taskProgress.Percent%">
+                            @taskProgress.Percent%
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary mt-2" disabled="@taskProgress.IsRunning" @onclick="() => StartProgress(taskProgress)">Dar inicio a tarea @taskProgress.TaskNumber</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row mt-4">
+        @foreach (var taskProgress in taskProgressList.Skip(3).Take(3))
+        {
+            <div class="col-md-4">
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar bg-pink" style="width: @taskProgress.Percent%">
+                            @taskProgress.Percent%
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary mt-2" disabled="@taskProgress.IsRunning" @onclick="() => StartProgress(taskProgress)">Dar inicio a tarea @taskProgress.TaskNumber</button>
+                </div>
+            </div>
+        }
+    </div>
+    
+    
+</div>
+
+<style>
+    .container {
+        padding: 20px;
+    }
+
+    .progress-container {
+        margin-bottom: 20px;
+    }
+
+    .progress-bar {
+        height: 50px; 
+        font-size: 18px; 
+        text-align: center; 
+        padding-top: 15px; 
+    }
+
+    .bg-pink {
+        background-color: pink;
+    }
+
+    .btn {
+        margin-right: 10px;
+    }
+
+</style>
+
+
+@code {
+    private class TaskProgress
+    {
+        public int TaskNumber { get; set; }
+        public int Max { get; set; } = 100;
+        public int Count { get; set; }
+        public int Percent => (int)(100 * (double)Count / (double)Max);
+        public bool IsRunning { get; set; }
+    }
+
+    private List<TaskProgress> taskProgressList = new List<TaskProgress>();
+
+    private async Task StartProgress(TaskProgress taskProgress)
+    {
+        taskProgress.IsRunning = true;
+
+        while (taskProgress.Count < taskProgress.Max)
+        {
+            taskProgress.Count++;
+            StateHasChanged();
+            await Task.Delay(100);
+        }
+
+        taskProgress.IsRunning = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        for (int i = 1; i <= 6; i++)
+        {
+            taskProgressList.Add(new TaskProgress { TaskNumber = i, Count = 0, IsRunning = false });
+        }
+    }
+}
